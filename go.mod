@@ -1,3 +1,3 @@
-module github.com/keegancsmith/rpc
+module github.com/cgrates/rpc
 
 go 1.13
