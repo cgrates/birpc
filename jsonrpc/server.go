@@ -1,31 +1,27 @@
-// This code is all of https://golang.org/src/net/rpc/jsonrpc/server.go and some of
-// https://golang.org/src/net/rpc/jsonrpc/client.go (both adjusted to use the fork).
-//
-// Unfortunately but logically the net/rpc/jsonrpc uses net/rpc types which are
-// incompatible with this fork, so the code could not be used as-is.
-//
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-//
-package rpc
+
+package jsonrpc
 
 import (
 	"encoding/json"
 	"errors"
 	"io"
 	"sync"
+
+	"github.com/cgrates/rpc"
 )
 
 var errMissingParams = errors.New("jsonrpc: request body missing params")
 
-type jsonServerCodec struct {
+type serverCodec struct {
 	dec *json.Decoder // for reading JSON values
 	enc *json.Encoder // for writing JSON values
 	c   io.Closer
 
 	// temporary work space
-	req jsonServerRequest
+	req serverRequest
 
 	// JSON-RPC clients can use arbitrary json values as request IDs.
 	// Package rpc expects uint64 request IDs.
@@ -39,8 +35,8 @@ type jsonServerCodec struct {
 }
 
 // NewServerCodec returns a new rpc.ServerCodec using JSON-RPC on conn.
-func NewJsonServerCodec(conn io.ReadWriteCloser) ServerCodec {
-	return &jsonServerCodec{
+func NewServerCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
+	return &serverCodec{
 		dec:     json.NewDecoder(conn),
 		enc:     json.NewEncoder(conn),
 		c:       conn,
@@ -48,25 +44,25 @@ func NewJsonServerCodec(conn io.ReadWriteCloser) ServerCodec {
 	}
 }
 
-type jsonServerRequest struct {
+type serverRequest struct {
 	Method string           `json:"method"`
 	Params *json.RawMessage `json:"params"`
 	Id     *json.RawMessage `json:"id"`
 }
 
-func (r *jsonServerRequest) reset() {
+func (r *serverRequest) reset() {
 	r.Method = ""
 	r.Params = nil
 	r.Id = nil
 }
 
-type jsonServerResponse struct {
+type serverResponse struct {
 	Id     *json.RawMessage `json:"id"`
 	Result interface{}      `json:"result"`
 	Error  interface{}      `json:"error"`
 }
 
-func (c *jsonServerCodec) ReadRequestHeader(r *Request) error {
+func (c *serverCodec) ReadRequestHeader(r *rpc.Request) error {
 	c.req.reset()
 	if err := c.dec.Decode(&c.req); err != nil {
 		return err
@@ -86,7 +82,7 @@ func (c *jsonServerCodec) ReadRequestHeader(r *Request) error {
 	return nil
 }
 
-func (c *jsonServerCodec) ReadRequestBody(x interface{}) error {
+func (c *serverCodec) ReadRequestBody(x interface{}) error {
 	if x == nil {
 		return nil
 	}
@@ -104,7 +100,7 @@ func (c *jsonServerCodec) ReadRequestBody(x interface{}) error {
 
 var null = json.RawMessage([]byte("null"))
 
-func (c *jsonServerCodec) WriteResponse(r *Response, x interface{}) error {
+func (c *serverCodec) WriteResponse(r *rpc.Response, x interface{}) error {
 	c.mutex.Lock()
 	b, ok := c.pending[r.Seq]
 	if !ok {
@@ -118,7 +114,7 @@ func (c *jsonServerCodec) WriteResponse(r *Response, x interface{}) error {
 		// Invalid request so no id. Use JSON null.
 		b = &null
 	}
-	resp := jsonServerResponse{Id: b}
+	resp := serverResponse{Id: b}
 	if r.Error == "" {
 		resp.Result = x
 	} else {
@@ -127,12 +123,13 @@ func (c *jsonServerCodec) WriteResponse(r *Response, x interface{}) error {
 	return c.enc.Encode(resp)
 }
 
-func (c *jsonServerCodec) Close() error {
+func (c *serverCodec) Close() error {
 	return c.c.Close()
 }
 
-type jsonClientRequest struct {
-	Method string         `json:"method"`
-	Params [1]interface{} `json:"params"`
-	Id     uint64         `json:"id"`
+// ServeConn runs the JSON-RPC server on a single connection.
+// ServeConn blocks, serving the connection until the client hangs up.
+// The caller typically invokes ServeConn in a go statement.
+func ServeConn(conn io.ReadWriteCloser) {
+	rpc.ServeCodec(NewServerCodec(conn))
 }
