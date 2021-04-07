@@ -10,6 +10,7 @@ import (
 	"github.com/cgrates/rpc/internal/svc"
 )
 
+// ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket
 type ClientConnector interface {
 	Call(ctx context.Context, serviceMethod string, args, reply interface{}) error
 }
