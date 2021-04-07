@@ -286,9 +286,8 @@ func TestServerErrorHasNullResult(t *testing.T) {
 	const valueText = "the value we don't want to see"
 	const errorText = "some error"
 	err := sc.WriteResponse(&rpc.Response{
-		ServiceMethod: "Method",
-		Seq:           1,
-		Error:         errorText,
+		Seq:   1,
+		Error: errorText,
 	}, valueText)
 	if err != nil {
 		t.Fatal(err)
