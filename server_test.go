@@ -146,7 +146,7 @@ func startNewServer() {
 	log.Println("NewServer test RPC server listening on", newServerAddr)
 	go newServer.Accept(l)
 
-	newServer.HandleHTTP(newHttpPath, "/bar")
+	newServer.HandleHTTP(newHttpPath)
 	httpOnce.Do(startHttpServer)
 }
 

@@ -79,7 +79,6 @@ func (c *clientCodec) ReadResponseHeader(r *rpc.Response) error {
 	}
 
 	c.mutex.Lock()
-	r.ServiceMethod = c.pending[c.resp.Id]
 	delete(c.pending, c.resp.Id)
 	c.mutex.Unlock()
 

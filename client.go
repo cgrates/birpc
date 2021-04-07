@@ -6,17 +6,11 @@ package rpc
 
 import (
 	"bufio"
-	"context"
-	"encoding/gob"
 	"errors"
 	"io"
-	"log"
 	"net"
 	"net/http"
-	"sync"
 	"time"
-
-	"github.com/cgrates/rpc/internal/svc"
 )
 
 // ServerError represents an error that has been returned from
@@ -39,53 +33,13 @@ type Call struct {
 	seq           uint64      // Sequence num used to send. Non-zero when sent.
 }
 
-// ClientTrace is a set of hooks to run at various stages of an outgoing RPC
-// request. Any particular hook may be nil. Functions may be called
-// concurrently from different goroutines.
-//
-// ClientTrace currently traces a single RPC request, not the response.
-type ClientTrace struct {
-	// WriteRequestStart is called when start WriteRequest. Concurrent calls to
-	// Client.Go or Client.Call can cause a queue to form, leading to a delay
-	// between calls to Client.Go/Client.Call and WriteRequestStart being
-	// called.
-	WriteRequestStart func()
-
-	// WriteRequestDone is called once WriteRequest returns with the error
-	// returned from WriteRequest.
-	WriteRequestDone func(err error)
-}
-
-// unique type to prevent assignment.
-type clientTraceContextKey struct{}
-
-// WithClientTrace returns a new context based on the provided parent
-// ctx. Requests made with the returned context will use the provided trace
-// hooks. Previous hooks registered with ctx are ignored.
-func WithClientTrace(ctx context.Context, trace *ClientTrace) context.Context {
-	return context.WithValue(ctx, clientTraceContextKey{}, trace)
-}
-
-func contextClientTrace(ctx context.Context) *ClientTrace {
-	trace, _ := ctx.Value(clientTraceContextKey{}).(*ClientTrace)
-	return trace
-}
-
 // Client represents an RPC Client.
 // There may be multiple outstanding Calls associated
 // with a single Client, and a Client may be used by
 // multiple goroutines simultaneously.
 type Client struct {
 	codec ClientCodec
-
-	reqMutex sync.Mutex // protects following
-	request  Request
-
-	mutex    sync.Mutex // protects following
-	seq      uint64
-	pending  map[uint64]*Call
-	closing  bool // user has called Close
-	shutdown bool // server has told us to stop
+	*basicClient
 }
 
 // A ClientCodec implements writing of RPC requests and
@@ -103,56 +57,6 @@ type ClientCodec interface {
 	ReadResponseBody(interface{}) error
 
 	Close() error
-}
-
-func (client *Client) send(ctx context.Context, call *Call) {
-	trace := contextClientTrace(ctx)
-
-	client.reqMutex.Lock()
-	defer client.reqMutex.Unlock()
-
-	// Register this call.
-	client.mutex.Lock()
-	if client.shutdown || client.closing {
-		client.mutex.Unlock()
-		call.Error = ErrShutdown
-		call.done()
-		return
-	}
-	if call.seq != 0 {
-		// It has already been canceled, don't bother sending
-		call.Error = context.Canceled
-		client.mutex.Unlock()
-		call.done()
-		return
-	}
-	client.seq++
-	seq := client.seq
-	call.seq = seq
-	client.pending[seq] = call
-	client.mutex.Unlock()
-
-	if trace != nil && trace.WriteRequestStart != nil {
-		trace.WriteRequestStart()
-	}
-
-	// Encode and send the request.
-	client.request.Seq = seq
-	client.request.ServiceMethod = call.ServiceMethod
-	err := client.codec.WriteRequest(&client.request, call.Args)
-	if trace != nil && trace.WriteRequestDone != nil {
-		trace.WriteRequestDone(err)
-	}
-	if err != nil {
-		client.mutex.Lock()
-		call = client.pending[seq]
-		delete(client.pending, seq)
-		client.mutex.Unlock()
-		if call != nil {
-			call.Error = err
-			call.done()
-		}
-	}
 }
 
 func (client *Client) input() {
@@ -217,8 +121,8 @@ func (client *Client) input() {
 	}
 	client.mutex.Unlock()
 	client.reqMutex.Unlock()
-	if debugLog && err != io.EOF && !closing {
-		log.Println("rpc: client protocol error:", err)
+	if err != io.EOF && !closing {
+		debugln("rpc: client protocol error:", err)
 	}
 }
 
@@ -229,9 +133,7 @@ func (call *Call) done() {
 	default:
 		// We don't want to block here. It is the caller's responsibility to make
 		// sure the channel has enough buffer space. See comment in Go().
-		if debugLog {
-			log.Println("rpc: discarding Call reply due to insufficient Done chan capacity")
-		}
+		debugln("rpc: discarding Call reply due to insufficient Done chan capacity")
 	}
 }
 
@@ -245,49 +147,18 @@ func (call *Call) done() {
 // concurrently so the implementation of conn should protect against
 // concurrent reads or concurrent writes.
 func NewClient(conn io.ReadWriteCloser) *Client {
-	encBuf := bufio.NewWriter(conn)
-	client := &gobClientCodec{conn, gob.NewDecoder(conn), gob.NewEncoder(encBuf), encBuf}
-	return NewClientWithCodec(client)
+	return NewClientWithCodec(NewClientCodec(conn))
 }
 
 // NewClientWithCodec is like NewClient but uses the specified
 // codec to encode requests and decode responses.
 func NewClientWithCodec(codec ClientCodec) *Client {
 	client := &Client{
-		codec:   codec,
-		pending: make(map[uint64]*Call),
+		codec:       codec,
+		basicClient: newBasicClient(codec),
 	}
 	go client.input()
 	return client
-}
-
-type gobClientCodec struct {
-	rwc    io.ReadWriteCloser
-	dec    *gob.Decoder
-	enc    *gob.Encoder
-	encBuf *bufio.Writer
-}
-
-func (c *gobClientCodec) WriteRequest(r *Request, body interface{}) (err error) {
-	if err = c.enc.Encode(r); err != nil {
-		return
-	}
-	if err = c.enc.Encode(body); err != nil {
-		return
-	}
-	return c.encBuf.Flush()
-}
-
-func (c *gobClientCodec) ReadResponseHeader(r *Response) error {
-	return c.dec.Decode(r)
-}
-
-func (c *gobClientCodec) ReadResponseBody(body interface{}) error {
-	return c.dec.Decode(body)
-}
-
-func (c *gobClientCodec) Close() error {
-	return c.rwc.Close()
 }
 
 // DialHTTP connects to an HTTP RPC server at the specified network address
@@ -338,75 +209,4 @@ func Dial(network, address string) (*Client, error) {
 		return nil, err
 	}
 	return NewClient(conn), nil
-}
-
-// Close calls the underlying codec's Close method. If the connection is already
-// shutting down, ErrShutdown is returned.
-func (client *Client) Close() error {
-	client.mutex.Lock()
-	if client.closing {
-		client.mutex.Unlock()
-		return ErrShutdown
-	}
-	client.closing = true
-	client.mutex.Unlock()
-	return client.codec.Close()
-}
-
-// Go calls client.GoContext with a background context. See GoContext docstring.
-func (client *Client) Go(serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
-	return client.GoContext(context.Background(), serviceMethod, args, reply, done)
-}
-
-// Go invokes the function asynchronously. It returns the Call structure representing
-// the invocation. The done channel will signal when the call is complete by returning
-// the same Call object. If done is nil, Go will allocate a new channel.
-// If non-nil, done must be buffered or Go will deliberately crash.
-func (client *Client) GoContext(ctx context.Context, serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
-	call := new(Call)
-	call.ServiceMethod = serviceMethod
-	call.Args = args
-	call.Reply = reply
-	if done == nil {
-		done = make(chan *Call, 10) // buffered.
-	} else {
-		// If caller passes done != nil, it must arrange that
-		// done has enough buffer for the number of simultaneous
-		// RPCs that will be using that channel. If the channel
-		// is totally unbuffered, it's best not to run at all.
-		if cap(done) == 0 {
-			log.Panic("rpc: done channel is unbuffered")
-		}
-	}
-	call.Done = done
-	client.send(ctx, call)
-	return call
-}
-
-// Call invokes the named function, waits for it to complete, and returns its error status.
-func (client *Client) Call(ctx context.Context, serviceMethod string, args interface{}, reply interface{}) error {
-	ch := make(chan *Call, 2) // 2 for this call and cancel
-	call := client.GoContext(ctx, serviceMethod, args, reply, ch)
-	select {
-	case <-call.Done:
-		return call.Error
-	case <-ctx.Done():
-		// Cancel the pending request on the client
-		client.mutex.Lock()
-		seq := call.seq
-		_, ok := client.pending[seq]
-		delete(client.pending, seq)
-		if seq == 0 {
-			// hasn't been sent yet, non-zero will prevent send
-			call.seq = 1
-		}
-		client.mutex.Unlock()
-
-		// Cancel running request on the server
-		if seq != 0 && ok {
-			client.Go("_goRPC_.Cancel", &svc.CancelArgs{Seq: seq}, nil, ch)
-		}
-
-		return ctx.Err()
-	}
 }
