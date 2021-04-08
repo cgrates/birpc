@@ -8,6 +8,7 @@ import (
 
 	"github.com/cgrates/rpc/birpc"
 	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/rpc/rpcc"
 )
 
 func BenchmarkBirpcInArgs(b *testing.B) {
@@ -29,7 +30,6 @@ func BenchmarkBirpcInArgs(b *testing.B) {
 	// Synchronous calls
 	args := &birpc.Args3{7, 8}
 	reply := new(birpc.Reply3)
-	b.ResetTimer()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -58,7 +58,34 @@ func BenchmarkBirpcInContext(b *testing.B) {
 	// Synchronous calls
 	args := &Args2{7, 8}
 	reply := new(Reply2)
+
 	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := client.Call(ctx, "Airth2.Add", args, reply); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBirpcInContextReflect(b *testing.B) {
+	newServer := rpcc.NewBirpcServer()
+	newServer.Register(new(rpcc.Airth2))
+	l, addr := listenTCP()
+	log.Println("NewServer test RPC server listening on", newServerAddr)
+	go newServer.Accept(l)
+
+	c, err := net.Dial("tcp", addr)
+	if err != nil {
+		b.Fatal(err)
+	}
+	client := rpcc.NewBirpcClient(c)
+	defer client.Close()
+	client.Register(new(rpcc.Airth2))
+	ctx := context.Background()
+
+	// Synchronous calls
+	args := &rpcc.Args2{7, 8}
+	reply := new(rpcc.Reply2)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
