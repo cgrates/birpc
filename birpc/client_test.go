@@ -2,16 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"testing"
-
-	"github.com/cgrates/rpc/context"
 )
 
 type shutdownCodec struct {
@@ -48,7 +47,7 @@ type R struct {
 
 type S struct{}
 
-func (s *S) Recv(ctx context.Context, nul *struct{}, reply *R) error {
+func (s *S) Recv(ctx context.Context, _ ClientConnector, nul *struct{}, reply *R) error {
 	*reply = R{[]byte("foo")}
 	return nil
 }

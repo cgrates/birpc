@@ -3,8 +3,13 @@ package svc
 import (
 	"sync"
 
-	"github.com/cgrates/rpc/context"
+	"context"
 )
+
+// ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket
+type ClientConnector interface {
+	Call(ctx context.Context, serviceMethod string, args, reply interface{}) error
+}
 
 // Pending manages a map of all pending requests to a rpc.Service for a
 // connection (an rpc.ServerCodec).
@@ -61,7 +66,7 @@ func (a *CancelArgs) SetPending(p *Pending) {
 // GoRPC is an internal service used by rpc.
 type GoRPC struct{}
 
-func (*GoRPC) Cancel(_ context.Context, args *CancelArgs, _ *bool) error {
+func (*GoRPC) Cancel2(_ context.Context, _ ClientConnector, args *CancelArgs, _ *bool) error {
 	args.pending.Cancel(args.Seq)
 	return nil
 }

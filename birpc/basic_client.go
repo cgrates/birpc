@@ -2,15 +2,17 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
+	"context"
 	"log"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/rpc/birpc/internal/svc"
 )
+
+type ClientConnector = svc.ClientConnector
 
 type writeClientCodec interface {
 	WriteRequest(*Request, interface{}) error
@@ -142,7 +144,7 @@ func (client *basicClient) Call(ctx context.Context, serviceMethod string, args 
 
 		// Cancel running request on the server
 		if seq != 0 && ok {
-			client.Go("_goRPC_.Cancel", &svc.CancelArgs{Seq: seq}, nil, ch)
+			client.Go("_goRPC_.Cancel2", &svc.CancelArgs{Seq: seq}, nil, ch)
 		}
 		return ctx.Err()
 	}
