@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
+	"context"
 	"errors"
 	"go/token"
 	"log"
@@ -12,14 +13,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/rpc/birpc/internal/svc"
 )
 
 // Precompute the reflect type for error. Can't use error directly
 // because Typeof takes an empty interface value. This is annoying.
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 var typeOfCtx = reflect.TypeOf((*context.Context)(nil)).Elem()
+var typeOfClnt = reflect.TypeOf((*ClientConnector)(nil)).Elem()
 
 // NewService creates a new service
 func NewService(rcvr interface{}, name string, useName bool) (s *Service, err error) {
@@ -69,7 +70,7 @@ type Service struct {
 	method map[string]*methodType // registered methods
 }
 
-func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, mtype *methodType, req *Request, argv, replyv reflect.Value, codec writeServerCodec) {
+func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, mtype *methodType, req *Request, argv, replyv reflect.Value, codec writeServerCodec, clnt reflect.Value) {
 	if wg != nil {
 		defer wg.Done()
 	}
@@ -84,7 +85,7 @@ func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pe
 	defer pending.Cancel(req.Seq)
 	function := mtype.method.Func
 	// Invoke the method, providing a new value for the reply.
-	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), argv, replyv})
+	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), clnt, argv, replyv})
 	// The return value for the method is an error.
 	errInter := returnValues[0].Interface()
 	errmsg := ""
@@ -117,10 +118,10 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 		if method.PkgPath != "" {
 			continue
 		}
-		// Method needs four ins: receiver, ctx, *args, *reply.
-		if mtype.NumIn() != 4 {
+		// Method needs four ins: receiver, ctx, client, *args, *reply.
+		if mtype.NumIn() != 5 {
 			if reportErr {
-				log.Printf("rpc.Register: method %q has %d input parameters; needs exactly three\n", mname, mtype.NumIn())
+				log.Printf("rpc.Register: method %q has %d input parameters; needs exactly five\n", mname, mtype.NumIn())
 			}
 			continue
 		}
@@ -131,8 +132,15 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 			}
 			continue
 		}
+		// First arg must be rpc.ClientConnection
+		if ctxType := mtype.In(2); ctxType != typeOfClnt {
+			if reportErr {
+				log.Printf("rpc.Register: return type of method %q is %q, must be error\n", mname, typeOfClnt)
+			}
+			continue
+		}
 		// Second arg need not be a pointer.
-		argType := mtype.In(2)
+		argType := mtype.In(3)
 		if !isExportedOrBuiltinType(argType) {
 			if reportErr {
 				log.Printf("rpc.Register: argument type of method %q is not exported: %q\n", mname, argType)
@@ -140,7 +148,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 			continue
 		}
 		// Third arg must be a pointer.
-		replyType := mtype.In(3)
+		replyType := mtype.In(4)
 		if replyType.Kind() != reflect.Ptr {
 			if reportErr {
 				log.Printf("rpc.Register: reply type of method %q is not a pointer: %q\n", mname, replyType)
@@ -173,7 +181,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 	return methods
 }
 
-func (s *Service) Call(ctx context.Context, serviceMethod string, args, rply interface{}) (err error) {
+func (s *Service) Call(ctx context.Context, clnt ClientConnector, serviceMethod string, args, rply interface{}) (err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
 		return errors.New("rpc: service/method request ill-formed: " + serviceMethod)
@@ -187,7 +195,7 @@ func (s *Service) Call(ctx context.Context, serviceMethod string, args, rply int
 	mtype := s.method[methodName]
 	function := mtype.method.Func
 	// Invoke the method, providing a new value for the reply.
-	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
+	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(clnt), reflect.ValueOf(args), reflect.ValueOf(rply)})
 	// The return value for the method is an error.
 	return returnValues[0].Interface().(error)
 }

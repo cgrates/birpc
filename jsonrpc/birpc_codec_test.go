@@ -1,7 +1,6 @@
 package jsonrpc
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cgrates/rpc"
+	"github.com/cgrates/rpc/context"
 )
 
 const (
@@ -26,7 +26,7 @@ func (*Airth2) Add(ctx context.Context, args *Args2, reply *Reply2) error {
 	*reply = Reply2(args.A + args.B)
 
 	var rep Reply2
-	client := rpc.ClientValueFromContext(ctx)
+	client := ctx.Client
 	if client == nil {
 		return errors.New("expected client not nil")
 	}

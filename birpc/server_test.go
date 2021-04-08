@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -19,8 +20,6 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/cgrates/rpc/context"
 )
 
 var (
@@ -46,17 +45,17 @@ type Arith int
 
 // Some of Arith's methods have value args, some have pointer args. That's deliberate.
 
-func (t *Arith) Add(ctx context.Context, args Args, reply *Reply) error {
+func (t *Arith) Add(ctx context.Context, cl ClientConnector, args Args, reply *Reply) error {
 	reply.C = args.A + args.B
 	return nil
 }
 
-func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
+func (t *Arith) Mul(ctx context.Context, cl ClientConnector, args *Args, reply *Reply) error {
 	reply.C = args.A * args.B
 	return nil
 }
 
-func (t *Arith) Div(ctx context.Context, args Args, reply *Reply) error {
+func (t *Arith) Div(ctx context.Context, cl ClientConnector, args Args, reply *Reply) error {
 	if args.B == 0 {
 		return errors.New("divide by zero")
 	}
@@ -64,28 +63,28 @@ func (t *Arith) Div(ctx context.Context, args Args, reply *Reply) error {
 	return nil
 }
 
-func (t *Arith) String(ctx context.Context, args *Args, reply *string) error {
+func (t *Arith) String(ctx context.Context, cl ClientConnector, args *Args, reply *string) error {
 	*reply = fmt.Sprintf("%d+%d=%d", args.A, args.B, args.A+args.B)
 	return nil
 }
 
-func (t *Arith) Scan(ctx context.Context, args string, reply *Reply) (err error) {
+func (t *Arith) Scan(ctx context.Context, cl ClientConnector, args string, reply *Reply) (err error) {
 	_, err = fmt.Sscan(args, &reply.C)
 	return
 }
 
-func (t *Arith) Error(ctx context.Context, args *Args, reply *Reply) error {
+func (t *Arith) Error(ctx context.Context, cl ClientConnector, args *Args, reply *Reply) error {
 	panic("ERROR")
 }
 
-func (t *Arith) SleepMilli(ctx context.Context, args *Args, reply *Reply) error {
+func (t *Arith) SleepMilli(ctx context.Context, cl ClientConnector, args *Args, reply *Reply) error {
 	time.Sleep(time.Duration(args.A) * time.Millisecond)
 	return nil
 }
 
 type hidden int
 
-func (t *hidden) Exported(ctx context.Context, args Args, reply *Reply) error {
+func (t *hidden) Exported(ctx context.Context, cl ClientConnector, args Args, reply *Reply) error {
 	reply.C = args.A + args.B
 	return nil
 }
@@ -96,17 +95,17 @@ type Embed struct {
 
 type BuiltinTypes struct{}
 
-func (BuiltinTypes) Map(ctx context.Context, args *Args, reply *map[int]int) error {
+func (BuiltinTypes) Map(ctx context.Context, cl ClientConnector, args *Args, reply *map[int]int) error {
 	(*reply)[args.A] = args.B
 	return nil
 }
 
-func (BuiltinTypes) Slice(ctx context.Context, args *Args, reply *[]int) error {
+func (BuiltinTypes) Slice(ctx context.Context, cl ClientConnector, args *Args, reply *[]int) error {
 	*reply = append(*reply, args.A, args.B)
 	return nil
 }
 
-func (BuiltinTypes) Array(ctx context.Context, args *Args, reply *[2]int) error {
+func (BuiltinTypes) Array(ctx context.Context, cl ClientConnector, args *Args, reply *[2]int) error {
 	(*reply)[0] = args.A
 	(*reply)[1] = args.B
 	return nil
@@ -409,7 +408,7 @@ type Context struct {
 	done    chan struct{}
 }
 
-func (t *Context) Wait(ctx context.Context, s string, reply *int) error {
+func (t *Context) Wait(ctx context.Context, cl ClientConnector, s string, reply *int) error {
 	close(t.started)
 	<-ctx.Done()
 	close(t.done)
@@ -554,19 +553,19 @@ func (t *NeedsCtx) NeedsCtx(args *Args, reply *Reply) error {
 	return nil
 }
 
-func (t *ReplyNotPointer) ReplyNotPointer(ctx context.Context, args *Args, reply Reply) error {
+func (t *ReplyNotPointer) ReplyNotPointer(ctx context.Context, cl ClientConnector, args *Args, reply Reply) error {
 	return nil
 }
 
-func (t *ArgNotPublic) ArgNotPublic(ctx context.Context, args *local, reply *Reply) error {
+func (t *ArgNotPublic) ArgNotPublic(ctx context.Context, cl ClientConnector, args *local, reply *Reply) error {
 	return nil
 }
 
-func (t *ReplyNotPublic) ReplyNotPublic(ctx context.Context, args *Args, reply *local) error {
+func (t *ReplyNotPublic) ReplyNotPublic(ctx context.Context, cl ClientConnector, args *Args, reply *local) error {
 	return nil
 }
 
-func (t *NeedsPtrType) NeedsPtrType(ctx context.Context, args *Args, reply *Reply) error {
+func (t *NeedsPtrType) NeedsPtrType(ctx context.Context, cl ClientConnector, args *Args, reply *Reply) error {
 	return nil
 }
 

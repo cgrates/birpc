@@ -1,17 +1,15 @@
 // Package birpc provides bi-directional RPC client and server similar to net/rpc.
-package rpc
+package birpc
 
 import (
+	"context"
 	"errors"
 	"io"
+	"reflect"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/rpc/birpc/internal/svc"
 )
-
-// ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket
-type ClientConnector = context.ClientConnector
 
 // BirpcClient represents an RPC BirpcClient.
 // There may be multiple outstanding Calls associated
@@ -62,8 +60,8 @@ func (c *BirpcClient) input() {
 	var resp Response
 	sending := &c.reqMutex
 	ctx, cancel := context.WithCancel(context.Background())
-	ctx.Client = c
 	defer cancel()
+	clnt := reflect.ValueOf(c)
 	pending := svc.NewPending(ctx)
 	wg := new(sync.WaitGroup)
 	for err == nil {
@@ -75,7 +73,7 @@ func (c *BirpcClient) input() {
 
 		if req.ServiceMethod != "" {
 			// request comes to server
-			if err := c.readRequest(req, sending, pending, wg); err != nil {
+			if err := c.readRequest(req, sending, pending, wg, clnt); err != nil {
 				debugln("birpc: error reading request:", err.Error())
 				c.sendResponse(sending, req, invalidRequest, c.codec, err.Error())
 				c.freeRequest(req)
@@ -116,7 +114,7 @@ func (c *BirpcClient) input() {
 	}
 }
 
-func (c *BirpcClient) readRequest(req *Request, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup) error {
+func (c *BirpcClient) readRequest(req *Request, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, clnt reflect.Value) error {
 	svc, mtype, err := c.getService(req)
 	if err != nil {
 		return errors.New("birpc: can't find method " + req.ServiceMethod)
@@ -133,7 +131,7 @@ func (c *BirpcClient) readRequest(req *Request, sending *sync.Mutex, pending *sv
 	}
 	replyv := getReplyv(mtype)
 	wg.Add(1)
-	go svc.call(c.basicServer, sending, pending, wg, mtype, req, argv, replyv, c.codec)
+	go svc.call(c.basicServer, sending, pending, wg, mtype, req, argv, replyv, c.codec, clnt)
 
 	return nil
 }

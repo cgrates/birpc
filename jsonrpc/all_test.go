@@ -6,7 +6,6 @@ package jsonrpc
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +19,7 @@ import (
 	"time"
 
 	"github.com/cgrates/rpc"
+	"github.com/cgrates/rpc/context"
 )
 
 type Args struct {
@@ -389,7 +389,7 @@ func (server *JsonServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		Out: w,
 	}
 	codec := NewServerCodec(rwc)
-	server.srv.ServeRequestContext(req.Context(), codec)
+	server.srv.ServeRequestContext(context.Context{Context: req.Context()}, codec)
 }
 
 func TestContextCodec(t *testing.T) {

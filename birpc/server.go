@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-	Package rpc is a fork of the stdlib net/rpc which is frozen. It adds
+	package birpc is a fork of the stdlib net/rpc which is frozen. It adds
 	support for context.Context on the client and server, including
 	propogating cancellation. See the README at
 	https://github.com/cgrates/rpc for motivation why this exists.
@@ -14,7 +14,7 @@
 	context.Context. Additionally the wire protocol is unchanged, so is
 	backwards compatible with net/rpc clients.
 
-	Package rpc provides access to the exported methods of an object across a
+	package birpc provides access to the exported methods of an object across a
 	network or other I/O connection.  A server registers an object, making it visible
 	as a service with the name of the type of the object.  After registration, exported
 	methods of the object will be accessible remotely.  A server may register multiple
@@ -137,9 +137,10 @@
 
 	The net/rpc package is frozen and is not accepting new features.
 */
-package rpc
+package birpc
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log"
@@ -148,8 +149,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/rpc/birpc/internal/svc"
 )
 
 const (
@@ -206,6 +206,7 @@ func (server *Server) ServeCodec(codec ServerCodec) {
 	defer cancel()
 	pending := svc.NewPending(ctx)
 	wg := new(sync.WaitGroup)
+	clnt := reflect.Zero(typeOfClnt)
 	for {
 		service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
 		if err != nil {
@@ -223,7 +224,7 @@ func (server *Server) ServeCodec(codec ServerCodec) {
 			continue
 		}
 		wg.Add(1)
-		go service.call(server.basicServer, sending, pending, wg, mtype, req, argv, replyv, codec)
+		go service.call(server.basicServer, sending, pending, wg, mtype, req, argv, replyv, codec, clnt)
 	}
 	// We've seen that there are no more requests.
 	// Wait for responses to be sent before closing codec.
@@ -246,6 +247,7 @@ func (server *Server) ServeRequestContext(ctx context.Context, codec ServerCodec
 	sending := new(sync.Mutex)
 	pending := svc.NewPending(ctx)
 	service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
+	clnt := reflect.Zero(typeOfClnt)
 	if err != nil {
 		if !keepReading {
 			return err
@@ -257,7 +259,7 @@ func (server *Server) ServeRequestContext(ctx context.Context, codec ServerCodec
 		}
 		return err
 	}
-	service.call(server.basicServer, sending, pending, nil, mtype, req, argv, replyv, codec)
+	service.call(server.basicServer, sending, pending, nil, mtype, req, argv, replyv, codec, clnt)
 	return nil
 }
 
