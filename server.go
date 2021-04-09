@@ -310,12 +310,12 @@ func (server *Server) readRequestHeader(codec ServerCodec) (svc *Service, mtype 
 // for each incoming connection. Accept blocks until the listener
 // returns a non-nil error. The caller typically invokes Accept in a
 // go statement.
-func (server *Server) Accept(lis net.Listener) {
+func (server *Server) Accept(lis net.Listener) error {
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
-			log.Print("rpc.Serve: accept:", err.Error())
-			return
+			debugln("rpc.Serve: accept:", err.Error())
+			return err
 		}
 		go server.ServeConn(conn)
 	}

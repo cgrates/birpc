@@ -1,3 +1,8 @@
+// Copyright 2021 Keegan Carruthers-Smith. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// The original code repository can be found here: https://github.com/keegancsmith/rpc
 package svc
 
 import (
