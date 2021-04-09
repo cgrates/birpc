@@ -8,7 +8,7 @@ package svc
 import (
 	"sync"
 
-	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/birpc/context"
 )
 
 // Pending manages a map of all pending requests to a rpc.Service for a

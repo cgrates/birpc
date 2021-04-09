@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-	Package rpc is a fork of the stdlib net/rpc which is frozen. It adds
+	package birpc is a fork of the stdlib net/rpc which is frozen. It adds
 	support for context.Context on the client and server, including
 	propogating cancellation. See the README at
 	https://github.com/cgrates/rpc for motivation why this exists.
@@ -14,7 +14,7 @@
 	context.Context. Additionally the wire protocol is unchanged, so is
 	backwards compatible with net/rpc clients.
 
-	Package rpc provides access to the exported methods of an object across a
+	package birpc provides access to the exported methods of an object across a
 	network or other I/O connection.  A server registers an object, making it visible
 	as a service with the name of the type of the object.  After registration, exported
 	methods of the object will be accessible remotely.  A server may register multiple
@@ -137,7 +137,7 @@
 
 	The net/rpc package is frozen and is not accepting new features.
 */
-package rpc
+package birpc
 
 import (
 	"errors"
@@ -148,8 +148,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/birpc/context"
+	"github.com/cgrates/birpc/internal/svc"
 )
 
 const (

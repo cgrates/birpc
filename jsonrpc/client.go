@@ -14,7 +14,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/cgrates/rpc"
+	"github.com/cgrates/birpc"
 )
 
 type clientCodec struct {
@@ -27,7 +27,7 @@ type clientCodec struct {
 	resp clientResponse
 
 	// JSON-RPC responses include the request id but not the request method.
-	// Package rpc expects both.
+	// package birpc expects both.
 	// We save the request method in pending when sending a request
 	// and then look it up by request ID when filling out the rpc Response.
 	mutex   sync.Mutex        // protects pending
@@ -35,7 +35,7 @@ type clientCodec struct {
 }
 
 // NewClientCodec returns a new rpc.ClientCodec using JSON-RPC on conn.
-func NewClientCodec(conn io.ReadWriteCloser) rpc.ClientCodec {
+func NewClientCodec(conn io.ReadWriteCloser) birpc.ClientCodec {
 	return &clientCodec{
 		dec:     json.NewDecoder(conn),
 		enc:     json.NewEncoder(conn),
@@ -50,7 +50,7 @@ type clientRequest struct {
 	Id     uint64         `json:"id"`
 }
 
-func (c *clientCodec) WriteRequest(r *rpc.Request, param interface{}) error {
+func (c *clientCodec) WriteRequest(r *birpc.Request, param interface{}) error {
 	c.mutex.Lock()
 	c.pending[r.Seq] = r.ServiceMethod
 	c.mutex.Unlock()
@@ -72,7 +72,7 @@ func (r *clientResponse) reset() {
 	r.Error = nil
 }
 
-func (c *clientCodec) ReadResponseHeader(r *rpc.Response) error {
+func (c *clientCodec) ReadResponseHeader(r *birpc.Response) error {
 	c.resp.reset()
 	if err := c.dec.Decode(&c.resp); err != nil {
 		return err
@@ -110,12 +110,12 @@ func (c *clientCodec) Close() error {
 
 // NewClient returns a new rpc.Client to handle requests to the
 // set of services at the other end of the connection.
-func NewClient(conn io.ReadWriteCloser) *rpc.Client {
-	return rpc.NewClientWithCodec(NewClientCodec(conn))
+func NewClient(conn io.ReadWriteCloser) *birpc.Client {
+	return birpc.NewClientWithCodec(NewClientCodec(conn))
 }
 
 // Dial connects to a JSON-RPC server at the specified network address.
-func Dial(network, address string) (*rpc.Client, error) {
+func Dial(network, address string) (*birpc.Client, error) {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return nil, err

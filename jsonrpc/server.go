@@ -10,7 +10,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/cgrates/rpc"
+	"github.com/cgrates/birpc"
 )
 
 var errMissingParams = errors.New("jsonrpc: request body missing params")
@@ -24,7 +24,7 @@ type serverCodec struct {
 	req serverRequest
 
 	// JSON-RPC clients can use arbitrary json values as request IDs.
-	// Package rpc expects uint64 request IDs.
+	// package birpc expects uint64 request IDs.
 	// We assign uint64 sequence numbers to incoming requests
 	// but save the original request ID in the pending map.
 	// When rpc responds, we use the sequence number in
@@ -35,7 +35,7 @@ type serverCodec struct {
 }
 
 // NewServerCodec returns a new rpc.ServerCodec using JSON-RPC on conn.
-func NewServerCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
+func NewServerCodec(conn io.ReadWriteCloser) birpc.ServerCodec {
 	return &serverCodec{
 		dec:     json.NewDecoder(conn),
 		enc:     json.NewEncoder(conn),
@@ -62,7 +62,7 @@ type serverResponse struct {
 	Error  interface{}      `json:"error"`
 }
 
-func (c *serverCodec) ReadRequestHeader(r *rpc.Request) error {
+func (c *serverCodec) ReadRequestHeader(r *birpc.Request) error {
 	c.req.reset()
 	if err := c.dec.Decode(&c.req); err != nil {
 		return err
@@ -100,7 +100,7 @@ func (c *serverCodec) ReadRequestBody(x interface{}) error {
 
 var null = json.RawMessage([]byte("null"))
 
-func (c *serverCodec) WriteResponse(r *rpc.Response, x interface{}) error {
+func (c *serverCodec) WriteResponse(r *birpc.Response, x interface{}) error {
 	c.mutex.Lock()
 	b, ok := c.pending[r.Seq]
 	if !ok {
@@ -131,5 +131,5 @@ func (c *serverCodec) Close() error {
 // ServeConn blocks, serving the connection until the client hangs up.
 // The caller typically invokes ServeConn in a go statement.
 func ServeConn(conn io.ReadWriteCloser) {
-	rpc.ServeCodec(NewServerCodec(conn))
+	birpc.ServeCodec(NewServerCodec(conn))
 }

@@ -8,7 +8,7 @@
 
 // The original code repository can be found here: https://github.com/cenkalti/rpc2
 
-package rpc
+package birpc
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/birpc/context"
 )
 
 const (

@@ -16,8 +16,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/cgrates/rpc"
-	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/birpc"
+	"github.com/cgrates/birpc/context"
 )
 
 const (
@@ -87,7 +87,7 @@ func TestJSONRPC(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := rpc.NewBirpcServer()
+	srv := birpc.NewBirpcServer()
 	number := make(chan int, 1)
 	srv.Register(&Airth2{number: number})
 
@@ -105,7 +105,7 @@ func TestJSONRPC(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	clt := rpc.NewBirpcClientWithCodec(NewJSONBirpcCodec(conn))
+	clt := birpc.NewBirpcClientWithCodec(NewJSONBirpcCodec(conn))
 	clt.Register(&Airth2{number: number})
 
 	// Test Call.

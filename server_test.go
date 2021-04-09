@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
 	"errors"
@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/birpc/context"
 )
 
 var (

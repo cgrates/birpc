@@ -17,7 +17,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/cgrates/rpc"
+	"github.com/cgrates/birpc"
 )
 
 type jsonCodec struct {
@@ -31,7 +31,7 @@ type jsonCodec struct {
 	clientResponse clientResponse
 
 	// JSON-RPC clients can use arbitrary json values as request IDs.
-	// Package rpc expects uint64 request IDs.
+	// package birpc expects uint64 request IDs.
 	// We assign uint64 sequence numbers to incoming requests
 	// but save the original request ID in the pending map.
 	// When rpc responds, we use the sequence number in
@@ -42,7 +42,7 @@ type jsonCodec struct {
 }
 
 // NewJSONBirpcCodec returns a new birpc.Codec using JSON-RPC on conn.
-func NewJSONBirpcCodec(conn io.ReadWriteCloser) rpc.BirpcCodec {
+func NewJSONBirpcCodec(conn io.ReadWriteCloser) birpc.BirpcCodec {
 	return &jsonCodec{
 		dec:     json.NewDecoder(conn),
 		enc:     json.NewEncoder(conn),
@@ -60,7 +60,7 @@ type message struct {
 	Error  interface{}      `json:"error"`
 }
 
-func (c *jsonCodec) ReadHeader(req *rpc.Request, resp *rpc.Response) error {
+func (c *jsonCodec) ReadHeader(req *birpc.Request, resp *birpc.Response) error {
 	c.msg = message{}
 	if err := c.dec.Decode(&c.msg); err != nil {
 		return err
@@ -135,7 +135,7 @@ func (c *jsonCodec) ReadResponseBody(x interface{}) error {
 	return json.Unmarshal(*c.clientResponse.Result, x)
 }
 
-func (c *jsonCodec) WriteRequest(r *rpc.Request, param interface{}) error {
+func (c *jsonCodec) WriteRequest(r *birpc.Request, param interface{}) error {
 	return c.enc.Encode(&clientRequest{
 		Method: r.ServiceMethod,
 		Params: [1]interface{}{param},
@@ -143,7 +143,7 @@ func (c *jsonCodec) WriteRequest(r *rpc.Request, param interface{}) error {
 	})
 }
 
-func (c *jsonCodec) WriteResponse(r *rpc.Response, x interface{}) error {
+func (c *jsonCodec) WriteResponse(r *birpc.Response, x interface{}) error {
 	c.mutex.Lock()
 	b, ok := c.pending[r.Seq]
 	if !ok {
