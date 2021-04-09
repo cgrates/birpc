@@ -2,7 +2,6 @@ package rpc
 
 import (
 	contextg "context"
-	"log"
 	"net"
 	"testing"
 
@@ -14,15 +13,10 @@ import (
 func BenchmarkBirpcInArgs(b *testing.B) {
 	newServer := birpc.NewBirpcServer()
 	newServer.Register(new(birpc.Airth3))
-	l, addr := listenTCP()
-	log.Println("NewServer test RPC server listening on", newServerAddr)
-	go newServer.Accept(l)
+	c1, c2 := net.Pipe()
+	go newServer.ServeConn(c1)
 
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		b.Fatal(err)
-	}
-	client := birpc.NewBirpcClient(c)
+	client := birpc.NewBirpcClient(c2)
 	defer client.Close()
 	client.Register(new(birpc.Airth3))
 	ctx := contextg.Background()
@@ -42,15 +36,10 @@ func BenchmarkBirpcInArgs(b *testing.B) {
 func BenchmarkBirpcInContext(b *testing.B) {
 	newServer := NewBirpcServer()
 	newServer.Register(new(Airth2))
-	l, addr := listenTCP()
-	log.Println("NewServer test RPC server listening on", newServerAddr)
-	go newServer.Accept(l)
+	c1, c2 := net.Pipe()
+	go newServer.ServeConn(c1)
 
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		b.Fatal(err)
-	}
-	client := NewBirpcClient(c)
+	client := NewBirpcClient(c2)
 	defer client.Close()
 	client.Register(new(Airth2))
 	ctx := context.Background()
@@ -70,15 +59,10 @@ func BenchmarkBirpcInContext(b *testing.B) {
 func BenchmarkBirpcInContextReflect(b *testing.B) {
 	newServer := rpcc.NewBirpcServer()
 	newServer.Register(new(rpcc.Airth2))
-	l, addr := listenTCP()
-	log.Println("NewServer test RPC server listening on", newServerAddr)
-	go newServer.Accept(l)
+	c1, c2 := net.Pipe()
+	go newServer.ServeConn(c1)
 
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		b.Fatal(err)
-	}
-	client := rpcc.NewBirpcClient(c)
+	client := rpcc.NewBirpcClient(c2)
 	defer client.Close()
 	client.Register(new(rpcc.Airth2))
 	ctx := context.Background()
