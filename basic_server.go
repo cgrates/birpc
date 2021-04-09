@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package rpc
+package birpc
 
 import (
 	"errors"
 	"strings"
 	"sync"
 
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/birpc/internal/svc"
 )
 
 type writeServerCodec interface {

@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cgrates/rpc"
-	"github.com/cgrates/rpc/context"
+	"github.com/cgrates/birpc"
+	"github.com/cgrates/birpc/context"
 )
 
 type Args struct {
@@ -78,8 +78,8 @@ func (BuiltinTypes) Array(_ context.Context, i int, reply *[1]int) error {
 }
 
 func init() {
-	rpc.Register(new(Arith))
-	rpc.Register(BuiltinTypes{})
+	birpc.Register(new(Arith))
+	birpc.Register(BuiltinTypes{})
 }
 
 func TestServerNoParams(t *testing.T) {
@@ -279,13 +279,13 @@ func TestServerErrorHasNullResult(t *testing.T) {
 		Writer: &out,
 		Closer: io.NopCloser(nil),
 	})
-	r := new(rpc.Request)
+	r := new(birpc.Request)
 	if err := sc.ReadRequestHeader(r); err != nil {
 		t.Fatal(err)
 	}
 	const valueText = "the value we don't want to see"
 	const errorText = "some error"
-	err := sc.WriteResponse(&rpc.Response{
+	err := sc.WriteResponse(&birpc.Response{
 		Seq:   1,
 		Error: errorText,
 	}, valueText)
@@ -380,7 +380,7 @@ func (c *HTTPReadWriteCloser) Write(d []byte) (n int, err error) { return c.Out.
 func (c *HTTPReadWriteCloser) Close() error                      { return nil }
 
 type JsonServer struct {
-	srv *rpc.Server
+	srv *birpc.Server
 }
 
 func (server *JsonServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -398,7 +398,7 @@ func TestContextCodec(t *testing.T) {
 		done:    make(chan struct{}),
 	}
 
-	srv := rpc.NewServer()
+	srv := birpc.NewServer()
 	srv.Register(svc)
 	handler := &JsonServer{srv}
 	ts := httptest.NewServer(handler)

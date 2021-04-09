@@ -8,15 +8,15 @@
 
 // The original code repository can be found here: https://github.com/cenkalti/rpc2
 
-package rpc
+package birpc
 
 import (
 	"errors"
 	"io"
 	"sync"
 
-	"github.com/cgrates/rpc/context"
-	"github.com/cgrates/rpc/internal/svc"
+	"github.com/cgrates/birpc/context"
+	"github.com/cgrates/birpc/internal/svc"
 )
 
 // ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket

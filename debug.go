@@ -8,7 +8,7 @@
 
 // The original code repository can be found here: https://github.com/cenkalti/rpc2
 
-package rpc
+package birpc
 
 import "log"
 

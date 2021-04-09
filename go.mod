@@ -1,4 +1,4 @@
-module github.com/cgrates/rpc
+module github.com/cgrates/birpc
 
 go 1.16
 
