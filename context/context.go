@@ -38,11 +38,13 @@ func WithCancel(parent Context) (ctx Context, cancel CancelFunc) {
 	ctx.Context, cancel = context.WithCancel(parent.Context)
 	return
 }
+
 func WithDeadline(parent Context, d time.Time) (ctx Context, cancel CancelFunc) {
 	ctx.Client = parent.Client
 	ctx.Context, cancel = context.WithDeadline(parent.Context, d)
 	return
 }
+
 func WithTimeout(parent Context, timeout time.Duration) (ctx Context, cancel CancelFunc) {
 	ctx.Client = parent.Client
 	ctx.Context, cancel = context.WithTimeout(parent.Context, timeout)
