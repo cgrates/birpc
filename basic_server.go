@@ -51,15 +51,18 @@ func (server *basicServer) RegisterName(name string, rcvr interface{}) error {
 	return server.register(rcvr, name, true)
 }
 
-func (server *basicServer) register(rcvr interface{}, name string, useName bool) error {
-	s, err := NewService(rcvr, name, useName)
-	if err != nil {
-		return err
+func (server *basicServer) register(rcvr interface{}, name string, useName bool) (err error) {
+	var srv *Service
+	var isService bool
+	if srv, isService = rcvr.(*Service); !isService { // is already defined as a service
+		if srv, err = NewService(rcvr, name, useName); err != nil {
+			return
+		}
 	}
-	if _, dup := server.serviceMap.LoadOrStore(s.name, s); dup {
-		return errors.New("rpc: service already defined: " + s.name)
+	if _, dup := server.serviceMap.LoadOrStore(srv.Name, srv); dup {
+		return errors.New("rpc: service already defined: " + srv.Name)
 	}
-	return nil
+	return
 }
 
 // UnregisterName remove the service from the server
@@ -130,7 +133,7 @@ func (server *basicServer) getService(req *Request) (svc *Service, mtype *method
 		return
 	}
 	svc = svci.(*Service)
-	mtype = svc.method[methodName]
+	mtype = svc.methods[methodName]
 	if mtype == nil {
 		err = errors.New("rpc: can't find method " + req.ServiceMethod)
 	}
