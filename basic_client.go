@@ -122,7 +122,7 @@ func (client *basicClient) Go(serviceMethod string, args interface{}, reply inte
 }
 
 // Call invokes the named function, waits for it to complete, and returns its error status.
-func (client *basicClient) Call(ctx context.Context, serviceMethod string, args interface{}, reply interface{}) error {
+func (client *basicClient) Call(ctx *context.Context, serviceMethod string, args interface{}, reply interface{}) error {
 	ch := make(chan *Call, 2) // 2 for this call and cancel
 	call := client.Go(serviceMethod, args, reply, ch)
 	select {

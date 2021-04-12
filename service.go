@@ -18,7 +18,7 @@ import (
 // Precompute the reflect type for error. Can't use error directly
 // because Typeof takes an empty interface value. This is annoying.
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
-var typeOfCtx = reflect.TypeOf((*context.Context)(nil)).Elem()
+var typeOfCtx = reflect.TypeOf((*context.Context)(nil))
 
 // NewService creates a new service
 func NewService(rcvr interface{}, name string, useName bool) (s *Service, err error) {
@@ -172,7 +172,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 	return methods
 }
 
-func (s *Service) Call(ctx context.Context, serviceMethod string, args, rply interface{}) (err error) {
+func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply interface{}) (err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
 		return errors.New("rpc: service/method request ill-formed: " + serviceMethod)
