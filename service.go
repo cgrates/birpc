@@ -35,12 +35,12 @@ func NewService(rcvr interface{}, name string, useName bool) (s *Service, err er
 	if !token.IsExported(sname) && !useName {
 		return nil, errors.New("rpc.Register: type " + sname + " is not exported")
 	}
-	s.name = sname
+	s.Name = sname
 
 	// Install the methods
-	s.method = suitableMethods(s.typ, true)
+	s.methods = suitableMethods(s.typ, true)
 
-	if len(s.method) == 0 {
+	if len(s.methods) == 0 {
 		var str string
 
 		// To help the user, see if a pointer receiver would work.
@@ -62,10 +62,10 @@ type methodType struct {
 }
 
 type Service struct {
-	name   string                 // name of service
-	rcvr   reflect.Value          // receiver of methods for the service
-	typ    reflect.Type           // type of the receiver
-	method map[string]*methodType // registered methods
+	Name    string                 // name of service
+	rcvr    reflect.Value          // receiver of methods for the service
+	typ     reflect.Type           // type of the receiver
+	methods map[string]*methodType // registered methods
 }
 
 func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, mtype *methodType, req *Request, argv, replyv reflect.Value, codec writeServerCodec) {
@@ -73,7 +73,7 @@ func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pe
 		defer wg.Done()
 	}
 	// _goRPC_ service calls require internal state.
-	if s.name == "_goRPC_" {
+	if s.Name == "_goRPC_" {
 		switch v := argv.Interface().(type) {
 		case *svc.CancelArgs:
 			v.SetPending(pending)
@@ -180,10 +180,10 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 	methodName := serviceMethod[dot+1:]
 
 	// Look up the request.
-	if serviceName := serviceMethod[:dot]; s.name != serviceName {
+	if serviceName := serviceMethod[:dot]; s.Name != serviceName {
 		return errors.New("rpc: can't find service " + serviceMethod)
 	}
-	mtype := s.method[methodName]
+	mtype := s.methods[methodName]
 	function := mtype.method.Func
 	// Invoke the method, providing a new value for the reply.
 	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
@@ -211,4 +211,12 @@ func getReplyv(mtype *methodType) (replyv reflect.Value) {
 		replyv.Elem().Set(reflect.MakeSlice(mtype.ReplyType.Elem(), 0, 0))
 	}
 	return
+}
+
+func (s *Service) UpdateMethodName(f func(key string) (newKey string)) {
+	methods := make(map[string]*methodType)
+	for k, v := range s.methods {
+		methods[f(k)] = v
+	}
+	s.methods = methods
 }
