@@ -31,7 +31,7 @@ type Airth2 struct {
 	number chan int
 }
 
-func (*Airth2) Add(ctx context.Context, args *Args2, reply *Reply2) error {
+func (*Airth2) Add(ctx *context.Context, args *Args2, reply *Reply2) error {
 	*reply = Reply2(args.A + args.B)
 
 	var rep Reply2
@@ -51,21 +51,21 @@ func (*Airth2) Add(ctx context.Context, args *Args2, reply *Reply2) error {
 	return nil
 }
 
-func (a *Airth2) Set(client context.Context, i int, _ *struct{}) error {
+func (a *Airth2) Set(ctx *context.Context, i int, _ *struct{}) error {
 	a.number <- i
 	return nil
 }
 
-func (*Airth2) Mult(client context.Context, args *Args2, reply *Reply2) error {
+func (*Airth2) Mult(ctx *context.Context, args *Args2, reply *Reply2) error {
 	*reply = Reply2(args.A * args.B)
 	return nil
 }
 
-func (*Airth2) AddPos(ctx context.Context, args []interface{}, result *float64) error {
+func (*Airth2) AddPos(ctx *context.Context, args []interface{}, result *float64) error {
 	*result = args[0].(float64) + args[1].(float64)
 	return nil
 }
-func (*Airth2) RawArgs(ctx context.Context, args []json.RawMessage, reply *[]string) error {
+func (*Airth2) RawArgs(ctx *context.Context, args []json.RawMessage, reply *[]string) error {
 	for _, p := range args {
 		var str string
 		json.Unmarshal(p, &str)
@@ -73,7 +73,7 @@ func (*Airth2) RawArgs(ctx context.Context, args []json.RawMessage, reply *[]str
 	}
 	return nil
 }
-func (*Airth2) TypedArgs(ctx context.Context, args []int, reply *[]string) error {
+func (*Airth2) TypedArgs(ctx *context.Context, args []int, reply *[]string) error {
 	for _, p := range args {
 		*reply = append(*reply, fmt.Sprintf("%d", p))
 	}

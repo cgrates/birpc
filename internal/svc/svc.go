@@ -16,17 +16,17 @@ import (
 type Pending struct {
 	mu     sync.Mutex
 	m      map[uint64]context.CancelFunc // seq -> cancel
-	parent context.Context
+	parent *context.Context
 }
 
-func NewPending(parent context.Context) *Pending {
+func NewPending(parent *context.Context) *Pending {
 	return &Pending{
 		m:      make(map[uint64]context.CancelFunc),
 		parent: parent,
 	}
 }
 
-func (s *Pending) Start(seq uint64) context.Context {
+func (s *Pending) Start(seq uint64) *context.Context {
 	ctx, cancel := context.WithCancel(s.parent)
 	s.mu.Lock()
 	// we assume seq is not already in map. If not, the client is broken.
@@ -66,7 +66,7 @@ func (a *CancelArgs) SetPending(p *Pending) {
 // GoRPC is an internal service used by rpc.
 type GoRPC struct{}
 
-func (*GoRPC) Cancel(_ context.Context, args *CancelArgs, _ *bool) error {
+func (*GoRPC) Cancel(_ *context.Context, args *CancelArgs, _ *bool) error {
 	args.pending.Cancel(args.Seq)
 	return nil
 }
