@@ -188,7 +188,8 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 	// Invoke the method, providing a new value for the reply.
 	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
 	// The return value for the method is an error.
-	return returnValues[0].Interface().(error)
+	err, _ = returnValues[0].Interface().(error)
+	return
 }
 
 func getArgv(mtype *methodType) (argv reflect.Value, argIsValue bool) {
