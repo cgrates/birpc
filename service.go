@@ -184,6 +184,9 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 		return errors.New("rpc: can't find service " + serviceMethod)
 	}
 	mtype := s.methods[methodName]
+	if mtype == nil {
+		return errors.New("rpc: can't find method " + serviceMethod)
+	}
 	function := mtype.method.Func
 	// Invoke the method, providing a new value for the reply.
 	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
