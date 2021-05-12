@@ -55,6 +55,16 @@ func NewService(rcvr interface{}, name string, useName bool) (s *Service, err er
 	return
 }
 
+// NewServiceWithMethodsRename creates a new service and renames the functions on the services using the f
+func NewServiceWithMethodsRename(rcvr interface{}, name string, useName bool, f func(oldFn string) (newFn string)) (s *Service, err error) {
+	s, err = NewService(rcvr, name, useName)
+	if err != nil {
+		return nil, err
+	}
+	s.updateMethodName(f)
+	return
+}
+
 type methodType struct {
 	method    reflect.Method
 	ArgType   reflect.Type
@@ -217,7 +227,7 @@ func getReplyv(mtype *methodType) (replyv reflect.Value) {
 	return
 }
 
-func (s *Service) UpdateMethodName(f func(key string) (newKey string)) {
+func (s *Service) updateMethodName(f func(key string) (newKey string)) {
 	methods := make(map[string]*methodType)
 	for k, v := range s.methods {
 		methods[f(k)] = v
