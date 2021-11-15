@@ -117,7 +117,7 @@ func (server *basicServer) freeResponse(resp *Response) {
 	server.respLock.Unlock()
 }
 
-func (server *basicServer) getService(req *Request) (svc *Service, mtype *methodType, err error) {
+func (server *basicServer) getService(req *Request) (svc *Service, mtype *MethodType, err error) {
 	dot := strings.LastIndex(req.ServiceMethod, ".")
 	if dot < 0 {
 		err = errors.New("rpc: service/method request ill-formed: " + req.ServiceMethod)
@@ -133,7 +133,7 @@ func (server *basicServer) getService(req *Request) (svc *Service, mtype *method
 		return
 	}
 	svc = svci.(*Service)
-	mtype = svc.methods[methodName]
+	mtype = svc.Methods[methodName]
 	if mtype == nil {
 		err = errors.New("rpc: can't find method " + req.ServiceMethod)
 	}

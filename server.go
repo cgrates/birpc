@@ -261,7 +261,7 @@ func (server *Server) ServeRequestContext(ctx *context.Context, codec ServerCode
 	return nil
 }
 
-func (server *Server) readRequest(codec ServerCodec) (service *Service, mtype *methodType, req *Request, argv, replyv reflect.Value, keepReading bool, err error) {
+func (server *Server) readRequest(codec ServerCodec) (service *Service, mtype *MethodType, req *Request, argv, replyv reflect.Value, keepReading bool, err error) {
 	service, mtype, req, keepReading, err = server.readRequestHeader(codec)
 	if err != nil {
 		if !keepReading {
@@ -286,7 +286,7 @@ func (server *Server) readRequest(codec ServerCodec) (service *Service, mtype *m
 	return
 }
 
-func (server *Server) readRequestHeader(codec ServerCodec) (svc *Service, mtype *methodType, req *Request, keepReading bool, err error) {
+func (server *Server) readRequestHeader(codec ServerCodec) (svc *Service, mtype *MethodType, req *Request, keepReading bool, err error) {
 	// Grab the request header.
 	req = server.getRequest()
 	err = codec.ReadRequestHeader(req)
