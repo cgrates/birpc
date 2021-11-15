@@ -38,9 +38,9 @@ func NewService(rcvr interface{}, name string, useName bool) (s *Service, err er
 	s.Name = sname
 
 	// Install the methods
-	s.methods = suitableMethods(s.typ, true)
+	s.Methods = suitableMethods(s.typ, true)
 
-	if len(s.methods) == 0 {
+	if len(s.Methods) == 0 {
 		var str string
 
 		// To help the user, see if a pointer receiver would work.
@@ -65,7 +65,7 @@ func NewServiceWithMethodsRename(rcvr interface{}, name string, useName bool, f 
 	return
 }
 
-type methodType struct {
+type MethodType struct {
 	method    reflect.Method
 	ArgType   reflect.Type
 	ReplyType reflect.Type
@@ -75,10 +75,10 @@ type Service struct {
 	Name    string                 // name of service
 	rcvr    reflect.Value          // receiver of methods for the service
 	typ     reflect.Type           // type of the receiver
-	methods map[string]*methodType // registered methods
+	Methods map[string]*MethodType // registered methods
 }
 
-func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, mtype *methodType, req *Request, argv, replyv reflect.Value, codec writeServerCodec) {
+func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup, mtype *MethodType, req *Request, argv, replyv reflect.Value, codec writeServerCodec) {
 	if wg != nil {
 		defer wg.Done()
 	}
@@ -116,8 +116,8 @@ func isExportedOrBuiltinType(t reflect.Type) bool {
 
 // suitableMethods returns suitable Rpc methods of typ, it will report
 // error using log if reportErr is true.
-func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
-	methods := make(map[string]*methodType)
+func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
+	methods := make(map[string]*MethodType)
 	for m := 0; m < typ.NumMethod(); m++ {
 		method := typ.Method(m)
 		mtype := method.Type
@@ -177,7 +177,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*methodType {
 			}
 			continue
 		}
-		methods[mname] = &methodType{method: method, ArgType: argType, ReplyType: replyType}
+		methods[mname] = &MethodType{method: method, ArgType: argType, ReplyType: replyType}
 	}
 	return methods
 }
@@ -193,7 +193,7 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 	if serviceName := serviceMethod[:dot]; s.Name != serviceName {
 		return errors.New("rpc: can't find service " + serviceMethod)
 	}
-	mtype := s.methods[methodName]
+	mtype := s.Methods[methodName]
 	if mtype == nil {
 		return errors.New("rpc: can't find method " + serviceMethod)
 	}
@@ -205,7 +205,7 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 	return
 }
 
-func getArgv(mtype *methodType) (argv reflect.Value, argIsValue bool) {
+func getArgv(mtype *MethodType) (argv reflect.Value, argIsValue bool) {
 	if mtype.ArgType.Kind() == reflect.Ptr {
 		argv = reflect.New(mtype.ArgType.Elem())
 	} else {
@@ -215,7 +215,7 @@ func getArgv(mtype *methodType) (argv reflect.Value, argIsValue bool) {
 	return
 }
 
-func getReplyv(mtype *methodType) (replyv reflect.Value) {
+func getReplyv(mtype *MethodType) (replyv reflect.Value) {
 	replyv = reflect.New(mtype.ReplyType.Elem())
 
 	switch mtype.ReplyType.Elem().Kind() {
@@ -228,9 +228,9 @@ func getReplyv(mtype *methodType) (replyv reflect.Value) {
 }
 
 func (s *Service) updateMethodName(f func(key string) (newKey string)) {
-	methods := make(map[string]*methodType)
-	for k, v := range s.methods {
+	methods := make(map[string]*MethodType)
+	for k, v := range s.Methods {
 		methods[f(k)] = v
 	}
-	s.methods = methods
+	s.Methods = methods
 }
