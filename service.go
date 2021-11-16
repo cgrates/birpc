@@ -66,7 +66,7 @@ func NewServiceWithMethodsRename(rcvr interface{}, name string, useName bool, f 
 }
 
 type MethodType struct {
-	method    reflect.Method
+	Method    reflect.Method
 	ArgType   reflect.Type
 	ReplyType reflect.Type
 }
@@ -91,7 +91,7 @@ func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pe
 	}
 	ctx := pending.Start(req.Seq)
 	defer pending.Cancel(req.Seq)
-	function := mtype.method.Func
+	function := mtype.Method.Func
 	// Invoke the method, providing a new value for the reply.
 	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), argv, replyv})
 	// The return value for the method is an error.
@@ -177,7 +177,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 			}
 			continue
 		}
-		methods[mname] = &MethodType{method: method, ArgType: argType, ReplyType: replyType}
+		methods[mname] = &MethodType{Method: method, ArgType: argType, ReplyType: replyType}
 	}
 	return methods
 }
@@ -197,7 +197,7 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 	if mtype == nil {
 		return errors.New("rpc: can't find method " + serviceMethod)
 	}
-	function := mtype.method.Func
+	function := mtype.Method.Func
 	// Invoke the method, providing a new value for the reply.
 	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
 	// The return value for the method is an error.
