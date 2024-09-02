@@ -21,13 +21,13 @@ var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 var typeOfCtx = reflect.TypeOf((*context.Context)(nil))
 
 // NewService creates a new service
-func NewService(rcvr interface{}, name string, useName bool) (s *Service, err error) {
+func NewService(rcvr any, name string, useName bool) (s *Service, err error) {
 	s = new(Service)
 	s.typ = reflect.TypeOf(rcvr)
 	s.rcvr = reflect.ValueOf(rcvr)
-	sname := reflect.Indirect(s.rcvr).Type().Name()
-	if useName {
-		sname = name
+	sname := name
+	if !useName {
+		sname = reflect.Indirect(s.rcvr).Type().Name()
 	}
 	if sname == "" {
 		return nil, errors.New("rpc.Register: no service name for type " + s.typ.String())
@@ -44,7 +44,7 @@ func NewService(rcvr interface{}, name string, useName bool) (s *Service, err er
 		var str string
 
 		// To help the user, see if a pointer receiver would work.
-		method := suitableMethods(reflect.PtrTo(s.typ), false)
+		method := suitableMethods(reflect.PointerTo(s.typ), false)
 		if len(method) != 0 {
 			str = "rpc.Register: type " + sname + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
 		} else {
@@ -56,7 +56,7 @@ func NewService(rcvr interface{}, name string, useName bool) (s *Service, err er
 }
 
 // NewServiceWithMethodsRename creates a new service and renames the functions on the services using the f
-func NewServiceWithMethodsRename(rcvr interface{}, name string, useName bool, f func(oldFn string) (newFn string)) (s *Service, err error) {
+func NewServiceWithMethodsRename(rcvr any, name string, useName bool, f func(oldFn string) (newFn string)) (s *Service, err error) {
 	s, err = NewService(rcvr, name, useName)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pe
 
 // Is this type exported or a builtin?
 func isExportedOrBuiltinType(t reflect.Type) bool {
-	for t.Kind() == reflect.Ptr {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	// PkgPath will be non-empty even for an exported type,
@@ -123,7 +123,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 		mtype := method.Type
 		mname := method.Name
 		// Method must be exported.
-		if method.PkgPath != "" {
+		if method.IsExported() {
 			continue
 		}
 		// Method needs four ins: receiver, ctx, *args, *reply.
@@ -150,7 +150,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 		}
 		// Third arg must be a pointer.
 		replyType := mtype.In(3)
-		if replyType.Kind() != reflect.Ptr {
+		if replyType.Kind() != reflect.Pointer {
 			if reportErr {
 				debugf("rpc.Register: reply type of method %q is not a pointer: %q\n", mname, replyType)
 			}
@@ -182,7 +182,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 	return methods
 }
 
-func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply interface{}) (err error) {
+func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply any) (err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
 		return errors.New("rpc: service/method request ill-formed: " + serviceMethod)
@@ -206,7 +206,7 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply in
 }
 
 func getArgv(mtype *MethodType) (argv reflect.Value, argIsValue bool) {
-	if mtype.ArgType.Kind() == reflect.Ptr {
+	if mtype.ArgType.Kind() == reflect.Pointer {
 		argv = reflect.New(mtype.ArgType.Elem())
 	} else {
 		argv = reflect.New(mtype.ArgType)

@@ -33,9 +33,9 @@ type Reply struct {
 type Arith int
 
 type ArithAddResp struct {
-	Id     interface{} `json:"id"`
-	Result Reply       `json:"result"`
-	Error  interface{} `json:"error"`
+	Id     any   `json:"id"`
+	Result Reply `json:"result"`
+	Error  any   `json:"error"`
 }
 
 func (t *Arith) Add(_ *context.Context, args *Args, reply *Reply) error {
@@ -415,12 +415,12 @@ func TestContextCodec(t *testing.T) {
 	}
 
 	b, err := json.Marshal(&struct {
-		Method string         `json:"method"`
-		Params [1]interface{} `json:"params"`
-		Id     uint64         `json:"id"`
+		Method string `json:"method"`
+		Params [1]any `json:"params"`
+		Id     uint64 `json:"id"`
 	}{
 		Method: "Context.Wait",
-		Params: [1]interface{}{""},
+		Params: [1]any{""},
 		Id:     1234,
 	})
 	if err != nil {
