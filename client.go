@@ -25,12 +25,12 @@ var ErrShutdown = errors.New("connection is shut down")
 
 // Call represents an active RPC.
 type Call struct {
-	ServiceMethod string      // The name of the service and method to call.
-	Args          interface{} // The argument to the function (*struct).
-	Reply         interface{} // The reply from the function (*struct).
-	Error         error       // After completion, the error status.
-	Done          chan *Call  // Receives *Call when Go is complete.
-	seq           uint64      // Sequence num used to send. Non-zero when sent.
+	ServiceMethod string     // The name of the service and method to call.
+	Args          any        // The argument to the function (*struct).
+	Reply         any        // The reply from the function (*struct).
+	Error         error      // After completion, the error status.
+	Done          chan *Call // Receives *Call when Go is complete.
+	seq           uint64     // Sequence num used to send. Non-zero when sent.
 }
 
 // Client represents an RPC Client.
@@ -52,9 +52,9 @@ type Client struct {
 // discarded.
 // See NewClient's comment for information about concurrent access.
 type ClientCodec interface {
-	WriteRequest(*Request, interface{}) error
+	WriteRequest(*Request, any) error
 	ReadResponseHeader(*Response) error
-	ReadResponseBody(interface{}) error
+	ReadResponseBody(any) error
 
 	Close() error
 }

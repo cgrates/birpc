@@ -13,7 +13,7 @@ import (
 )
 
 type writeClientCodec interface {
-	WriteRequest(*Request, interface{}) error
+	WriteRequest(*Request, any) error
 	Close() error
 }
 
@@ -100,7 +100,7 @@ func (client *basicClient) Close() error {
 // the invocation. The done channel will signal when the call is complete by returning
 // the same Call object. If done is nil, Go will allocate a new channel.
 // If non-nil, done must be buffered or Go will deliberately crash.
-func (client *basicClient) Go(serviceMethod string, args interface{}, reply interface{}, done chan *Call) *Call {
+func (client *basicClient) Go(serviceMethod string, args any, reply any, done chan *Call) *Call {
 	call := new(Call)
 	call.ServiceMethod = serviceMethod
 	call.Args = args
@@ -122,7 +122,7 @@ func (client *basicClient) Go(serviceMethod string, args interface{}, reply inte
 }
 
 // Call invokes the named function, waits for it to complete, and returns its error status.
-func (client *basicClient) Call(ctx *context.Context, serviceMethod string, args interface{}, reply interface{}) error {
+func (client *basicClient) Call(ctx *context.Context, serviceMethod string, args any, reply any) error {
 	ch := make(chan *Call, 2) // 2 for this call and cancel
 	call := client.Go(serviceMethod, args, reply, ch)
 	select {

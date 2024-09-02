@@ -13,7 +13,7 @@ import (
 )
 
 type writeServerCodec interface {
-	WriteResponse(*Response, interface{}) error
+	WriteResponse(*Response, any) error
 }
 
 func newBasicServer() (bs *basicServer) {
@@ -33,25 +33,26 @@ type basicServer struct {
 
 // Register publishes in the server the set of methods of the
 // receiver value that satisfy the following conditions:
-//	- exported method of exported type
-//	- two arguments, both of exported type
-//	- the second argument is a pointer
-//	- one return value, of type error
+//   - exported method of exported type
+//   - two arguments, both of exported type
+//   - the second argument is a pointer
+//   - one return value, of type error
+//
 // It returns an error if the receiver is not an exported type or has
 // no suitable methods. It also logs the error using package log.
 // The client accesses each method using a string of the form "Type.Method",
 // where Type is the receiver's concrete type.
-func (server *basicServer) Register(rcvr interface{}) error {
+func (server *basicServer) Register(rcvr any) error {
 	return server.register(rcvr, "", false)
 }
 
 // RegisterName is like Register but uses the provided name for the type
 // instead of the receiver's concrete type.
-func (server *basicServer) RegisterName(name string, rcvr interface{}) error {
+func (server *basicServer) RegisterName(name string, rcvr any) error {
 	return server.register(rcvr, name, true)
 }
 
-func (server *basicServer) register(rcvr interface{}, name string, useName bool) (err error) {
+func (server *basicServer) register(rcvr any, name string, useName bool) (err error) {
 	var srv *Service
 	var isService bool
 	if srv, isService = rcvr.(*Service); !isService { // is already defined as a service
@@ -145,7 +146,7 @@ func (server *basicServer) getService(req *Request) (svc *Service, mtype *Method
 // contains an error when it is used.
 var invalidRequest = struct{}{}
 
-func (server *basicServer) sendResponse(sending *sync.Mutex, req *Request, reply interface{}, codec writeServerCodec, errmsg string) {
+func (server *basicServer) sendResponse(sending *sync.Mutex, req *Request, reply any, codec writeServerCodec, errmsg string) {
 	resp := server.getResponse()
 	// Encode the response header
 	if errmsg != "" {
