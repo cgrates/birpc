@@ -15,13 +15,13 @@ import "log"
 // DebugLog controls the printing of internal and I/O errors.
 var DebugLog = false
 
-func debugln(v ...interface{}) {
+func debugln(v ...any) {
 	if DebugLog {
 		log.Println(v...)
 	}
 }
 
-func debugf(l string, v ...interface{}) {
+func debugf(l string, v ...any) {
 	if DebugLog {
 		log.Printf(l, v...)
 	}

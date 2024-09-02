@@ -494,7 +494,7 @@ func (codec *CodecEmulator) ReadRequestHeader(req *Request) error {
 	return nil
 }
 
-func (codec *CodecEmulator) ReadRequestBody(argv interface{}) error {
+func (codec *CodecEmulator) ReadRequestBody(argv any) error {
 	if codec.args == nil {
 		return io.ErrUnexpectedEOF
 	}
@@ -502,7 +502,7 @@ func (codec *CodecEmulator) ReadRequestBody(argv interface{}) error {
 	return nil
 }
 
-func (codec *CodecEmulator) WriteResponse(resp *Response, reply interface{}) error {
+func (codec *CodecEmulator) WriteResponse(resp *Response, reply any) error {
 	if resp.Error != "" {
 		codec.err = errors.New(resp.Error)
 	} else {
@@ -598,7 +598,7 @@ func TestRegistrationError(t *testing.T) {
 
 type WriteFailCodec int
 
-func (WriteFailCodec) WriteRequest(*Request, interface{}) error {
+func (WriteFailCodec) WriteRequest(*Request, any) error {
 	// the panic caused by this error used to not unlock a lock.
 	return errors.New("fail")
 }
@@ -607,7 +607,7 @@ func (WriteFailCodec) ReadResponseHeader(*Response) error {
 	select {}
 }
 
-func (WriteFailCodec) ReadResponseBody(interface{}) error {
+func (WriteFailCodec) ReadResponseBody(any) error {
 	select {}
 }
 

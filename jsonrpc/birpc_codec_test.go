@@ -61,7 +61,7 @@ func (*Airth2) Mult(ctx *context.Context, args *Args2, reply *Reply2) error {
 	return nil
 }
 
-func (*Airth2) AddPos(ctx *context.Context, args []interface{}, result *float64) error {
+func (*Airth2) AddPos(ctx *context.Context, args []any, result *float64) error {
 	*result = args[0].(float64) + args[1].(float64)
 	return nil
 }
@@ -125,7 +125,7 @@ func TestJSONRPC(t *testing.T) {
 
 	// Test Positional arguments.
 	var result float64
-	err = clt.Call(context.TODO(), "Airth2.AddPos", []interface{}{1, 2}, &result)
+	err = clt.Call(context.TODO(), "Airth2.AddPos", []any{1, 2}, &result)
 	if err != nil {
 		t.Fatal(err)
 	}

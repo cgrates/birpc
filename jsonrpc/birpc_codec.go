@@ -57,7 +57,7 @@ type message struct {
 	Params *json.RawMessage `json:"params"`
 	Id     *json.RawMessage `json:"id"`
 	Result *json.RawMessage `json:"result"`
-	Error  interface{}      `json:"error"`
+	Error  any              `json:"error"`
 }
 
 func (c *jsonCodec) ReadHeader(req *birpc.Request, resp *birpc.Response) error {
@@ -112,7 +112,7 @@ func (c *jsonCodec) ReadHeader(req *birpc.Request, resp *birpc.Response) error {
 	return nil
 }
 
-func (c *jsonCodec) ReadRequestBody(x interface{}) error {
+func (c *jsonCodec) ReadRequestBody(x any) error {
 	if x == nil {
 		return nil
 	}
@@ -123,27 +123,27 @@ func (c *jsonCodec) ReadRequestBody(x interface{}) error {
 	// RPC params is struct.
 	// Unmarshal into array containing struct for now.
 	// Should think about making RPC more general.
-	var params [1]interface{}
+	var params [1]any
 	params[0] = x
 	return json.Unmarshal(*c.serverRequest.Params, &params)
 }
 
-func (c *jsonCodec) ReadResponseBody(x interface{}) error {
+func (c *jsonCodec) ReadResponseBody(x any) error {
 	if x == nil {
 		return nil
 	}
 	return json.Unmarshal(*c.clientResponse.Result, x)
 }
 
-func (c *jsonCodec) WriteRequest(r *birpc.Request, param interface{}) error {
+func (c *jsonCodec) WriteRequest(r *birpc.Request, param any) error {
 	return c.enc.Encode(&clientRequest{
 		Method: r.ServiceMethod,
-		Params: [1]interface{}{param},
+		Params: [1]any{param},
 		Id:     r.Seq,
 	})
 }
 
-func (c *jsonCodec) WriteResponse(r *birpc.Response, x interface{}) error {
+func (c *jsonCodec) WriteResponse(r *birpc.Response, x any) error {
 	c.mutex.Lock()
 	b, ok := c.pending[r.Seq]
 	if !ok {

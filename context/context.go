@@ -22,7 +22,7 @@ func TODO() *Context {
 
 // ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket
 type ClientConnector interface {
-	Call(ctx *Context, serviceMethod string, args, reply interface{}) error
+	Call(ctx *Context, serviceMethod string, args, reply any) error
 }
 
 type CancelFunc = context.CancelFunc
@@ -54,7 +54,7 @@ func WithTimeout(parent *Context, timeout time.Duration) (ctx *Context, cancel C
 	return
 }
 
-func WithValue(parent *Context, key, val interface{}) *Context {
+func WithValue(parent *Context, key, val any) *Context {
 	return &Context{
 		Client:  parent.Client,
 		Context: context.WithValue(parent.Context, key, val),

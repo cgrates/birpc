@@ -30,16 +30,16 @@ type BirpcCodec interface {
 	ReadHeader(*Request, *Response) error
 
 	// ReadRequestBody into args argument of handler function.
-	ReadRequestBody(interface{}) error
+	ReadRequestBody(any) error
 
 	// ReadResponseBody into reply argument of handler function.
-	ReadResponseBody(interface{}) error
+	ReadResponseBody(any) error
 
 	// WriteRequest must be safe for concurrent use by multiple goroutines.
-	WriteRequest(*Request, interface{}) error
+	WriteRequest(*Request, any) error
 
 	// WriteResponse must be safe for concurrent use by multiple goroutines.
-	WriteResponse(*Response, interface{}) error
+	WriteResponse(*Response, any) error
 
 	// Close is called when client/server finished with the connection.
 	Close() error
@@ -85,15 +85,15 @@ func (c *gobCodec) ReadHeader(req *Request, resp *Response) error {
 	return nil
 }
 
-func (c *gobCodec) ReadRequestBody(body interface{}) error {
+func (c *gobCodec) ReadRequestBody(body any) error {
 	return c.dec.Decode(body)
 }
 
-func (c *gobCodec) ReadResponseBody(body interface{}) error {
+func (c *gobCodec) ReadResponseBody(body any) error {
 	return c.dec.Decode(body)
 }
 
-func (c *gobCodec) WriteRequest(r *Request, body interface{}) (err error) {
+func (c *gobCodec) WriteRequest(r *Request, body any) (err error) {
 	if err = c.enc.Encode(r); err != nil {
 		return
 	}
@@ -103,7 +103,7 @@ func (c *gobCodec) WriteRequest(r *Request, body interface{}) (err error) {
 	return c.encBuf.Flush()
 }
 
-func (c *gobCodec) WriteResponse(r *Response, body interface{}) (err error) {
+func (c *gobCodec) WriteResponse(r *Response, body any) (err error) {
 	if err = c.enc.Encode(r); err != nil {
 		if c.encBuf.Flush() == nil {
 			// Gob couldn't encode the header. Should not happen, so if it does,
