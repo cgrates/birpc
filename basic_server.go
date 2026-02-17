@@ -65,13 +65,9 @@ func (server *basicServer) register(rcvr interface{}, name string, useName bool)
 	return
 }
 
-// UnregisterName remove the service from the server
-// It returns an error if the service was not registered
-// This can be used to update the server dynamically
-// by bringing the service down or replacing it without
-// replacing the server
+// UnregisterName removes the named service from the server.
 func (server *basicServer) UnregisterName(name string) error {
-	if _, loaded := server.serviceMap.LoadAndDelete(name); loaded {
+	if _, loaded := server.serviceMap.LoadAndDelete(name); !loaded {
 		return errors.New("rpc: service not defined: " + name)
 	}
 	return nil

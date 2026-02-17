@@ -955,7 +955,12 @@ func TestUnregister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	newServer.UnregisterName("Arith")
+	if err := newServer.UnregisterName("Arith"); err != nil {
+		t.Fatal(err)
+	}
+	if err := newServer.UnregisterName("Arith"); err == nil {
+		t.Fatal("expected error for already-unregistered service")
+	}
 	expErrMsg := "rpc: can't find service Arith.Add"
 
 	err = client.Call(ctx, "Arith.Add", args, reply)
