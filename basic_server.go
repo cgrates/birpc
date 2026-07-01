@@ -74,6 +74,13 @@ func (server *basicServer) UnregisterName(name string) error {
 	return nil
 }
 
+// Range calls f for each registered service. Iteration stops if f returns false.
+func (server *basicServer) Range(f func(name string, svc *Service) bool) {
+	server.serviceMap.Range(func(k, v any) bool {
+		return f(k.(string), v.(*Service))
+	})
+}
+
 func (server *basicServer) getRequest() *Request {
 	server.reqLock.Lock()
 	req := server.freeReq
