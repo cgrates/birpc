@@ -123,7 +123,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 		mtype := method.Type
 		mname := method.Name
 		// Method must be exported.
-		if method.IsExported() {
+		if !method.IsExported() {
 			continue
 		}
 		// Method needs four ins: receiver, ctx, *args, *reply.
