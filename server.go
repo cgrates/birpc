@@ -164,9 +164,24 @@ const (
 // but documented here as an aid to debugging, such as when analyzing
 // network traffic.
 type Request struct {
-	ServiceMethod string   // format: "Service.Method"
-	Seq           uint64   // sequence number chosen by client
-	next          *Request // for free list in Server
+	ServiceMethod string // format: "Service.Method"
+	Seq           uint64 // sequence number chosen by client
+
+	doneFunc func()
+	next     *Request // for free list in Server
+}
+
+// SetDoneFunc sets a function to call after the server attempts to write the response.
+func (r *Request) SetDoneFunc(f func()) {
+	r.doneFunc = f
+}
+
+func (r *Request) complete() {
+	f := r.doneFunc
+	r.doneFunc = nil
+	if f != nil {
+		f()
+	}
 }
 
 // Response is a header written before every RPC return. It is used internally

@@ -150,6 +150,7 @@ func (server *basicServer) getService(req *Request) (svc *Service, mtype *Method
 var invalidRequest = struct{}{}
 
 func (server *basicServer) sendResponse(sending *sync.Mutex, req *Request, reply any, codec writeServerCodec, errmsg string) {
+	defer req.complete()
 	resp := server.getResponse()
 	// Encode the response header
 	if errmsg != "" {

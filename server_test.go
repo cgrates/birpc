@@ -460,6 +460,47 @@ func TestContext(t *testing.T) {
 	}
 }
 
+type doneTestCodec struct {
+	writeCalled bool
+	err         error
+}
+
+func (c *doneTestCodec) WriteResponse(*Response, any) error {
+	c.writeCalled = true
+	return c.err
+}
+
+func TestRequestDoneFunc(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  error
+	}{
+		{"success", nil},
+		{"write error", errors.New("write failed")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := newBasicServer()
+			codec := &doneTestCodec{err: tc.err}
+			req := new(Request)
+			calls := 0
+			req.SetDoneFunc(func() {
+				if !codec.writeCalled {
+					t.Error("callback ran before WriteResponse")
+				}
+				calls++
+			})
+
+			server.sendResponse(new(sync.Mutex), req, nil, codec, "")
+			if calls != 1 {
+				t.Errorf("callback called %d times, want 1", calls)
+			}
+			if req.doneFunc != nil {
+				t.Error("doneFunc was not cleared")
+			}
+		})
+	}
+}
+
 // CodecEmulator provides a client-like api and a ServerCodec interface.
 // Can be used to test ServeRequest.
 type CodecEmulator struct {
