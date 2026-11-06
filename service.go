@@ -31,7 +31,7 @@ func NewService(rcvr any, name string, useName bool) (s *Service, err error) {
 	if sname == "" {
 		return nil, errors.New("rpc.Register: no service name for type " + s.typ.String())
 	}
-	if !token.IsExported(sname) && !useName {
+	if !useName && !token.IsExported(sname) {
 		return nil, errors.New("rpc.Register: type " + sname + " is not exported")
 	}
 	s.Name = sname
