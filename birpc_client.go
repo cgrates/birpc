@@ -128,6 +128,9 @@ func (c *BirpcClient) input() {
 func (c *BirpcClient) readRequest(req *Request, sending *sync.Mutex, pending *svc.Pending, wg *sync.WaitGroup) error {
 	svc, mtype, err := c.getService(req)
 	if err != nil {
+		if err := c.codec.ReadRequestBody(nil); err != nil {
+			return err
+		}
 		return errors.New("birpc: can't find method " + req.ServiceMethod)
 	}
 
