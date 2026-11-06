@@ -11,12 +11,11 @@
 package birpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"testing"
-
-	"github.com/cgrates/birpc/context"
 )
 
 const (
@@ -28,11 +27,11 @@ type Args2 struct{ A, B int }
 type Reply2 int
 type Airth2 struct{}
 
-func (*Airth2) Add(ctx *context.Context, args *Args2, reply *Reply2) error {
+func (*Airth2) Add(ctx context.Context, args *Args2, reply *Reply2) error {
 	*reply = Reply2(args.A + args.B)
 
 	var rep Reply2
-	client := ctx.Client
+	client := ClientFromContext(ctx)
 	if client == nil {
 		return errors.New("expected client not nil")
 	}
@@ -48,7 +47,7 @@ func (*Airth2) Add(ctx *context.Context, args *Args2, reply *Reply2) error {
 	return nil
 }
 
-func (*Airth2) Mult(client *context.Context, args *Args2, reply *Reply2) error {
+func (*Airth2) Mult(client context.Context, args *Args2, reply *Reply2) error {
 	*reply = Reply2(args.A * args.B)
 	return nil
 }

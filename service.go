@@ -5,19 +5,19 @@
 package birpc
 
 import (
+	"context"
 	"errors"
 	"go/token"
 	"reflect"
 	"strings"
 	"sync"
 
-	"github.com/cgrates/birpc/context"
 	"github.com/cgrates/birpc/internal/svc"
 )
 
 // Precompute the reflect type for error.
 var typeOfError = reflect.TypeFor[error]()
-var typeOfCtx = reflect.TypeFor[*context.Context]()
+var typeOfCtx = reflect.TypeFor[context.Context]()
 
 // NewService creates a new service
 func NewService(rcvr any, name string, useName bool) (s *Service, err error) {
@@ -92,7 +92,7 @@ func (s *Service) call(server *basicServer, sending *sync.Mutex, pending *svc.Pe
 	defer pending.Cancel(req.Seq)
 	function := mtype.Method.Func
 	// Invoke the method, providing a new value for the reply.
-	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), argv, replyv})
+	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(&ctx).Elem(), argv, replyv})
 	// The return value for the method is an error.
 	errInter := returnValues[0].Interface()
 	errmsg := ""
@@ -181,7 +181,7 @@ func suitableMethods(typ reflect.Type, reportErr bool) map[string]*MethodType {
 	return methods
 }
 
-func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply any) (err error) {
+func (s *Service) Call(ctx context.Context, serviceMethod string, args, rply any) (err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
 		return errors.New("rpc: service/method request ill-formed: " + serviceMethod)
@@ -198,7 +198,7 @@ func (s *Service) Call(ctx *context.Context, serviceMethod string, args, rply an
 	}
 	function := mtype.Method.Func
 	// Invoke the method, providing a new value for the reply.
-	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(ctx), reflect.ValueOf(args), reflect.ValueOf(rply)})
+	returnValues := function.Call([]reflect.Value{s.rcvr, reflect.ValueOf(&ctx).Elem(), reflect.ValueOf(args), reflect.ValueOf(rply)})
 	// The return value for the method is an error.
 	err, _ = returnValues[0].Interface().(error)
 	return

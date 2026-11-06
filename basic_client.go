@@ -5,10 +5,10 @@
 package birpc
 
 import (
+	"context"
 	"log"
 	"sync"
 
-	"github.com/cgrates/birpc/context"
 	"github.com/cgrates/birpc/internal/svc"
 )
 
@@ -122,7 +122,7 @@ func (client *basicClient) Go(serviceMethod string, args any, reply any, done ch
 }
 
 // Call invokes the named function, waits for it to complete, and returns its error status.
-func (client *basicClient) Call(ctx *context.Context, serviceMethod string, args any, reply any) error {
+func (client *basicClient) Call(ctx context.Context, serviceMethod string, args any, reply any) error {
 	ch := make(chan *Call, 2) // 2 for this call and cancel
 	call := client.Go(serviceMethod, args, reply, ch)
 	select {
