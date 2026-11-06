@@ -9,6 +9,9 @@ and Server methods are expected to take a `context.Context` as the first
 argument. Additionally the wire protocol is unchanged, so is backwards
 compatible with `net/rpc` clients.
 
+In bidirectional handlers, `ClientFromContext(ctx)` returns the client connection.
+Use `WithClient(ctx, client)` to set it for internal calls.
+
 `DialHTTPPathTimeout` function is also added. A future release of rpc may
 update all Dial functions to instead take a context.
 

@@ -11,16 +11,18 @@
 package birpc
 
 import (
+	"context"
 	"errors"
 	"io"
 	"sync"
 
-	"github.com/cgrates/birpc/context"
 	"github.com/cgrates/birpc/internal/svc"
 )
 
 // ClientConnector is the connection used in RpcClient, as interface so we can combine the rpc.RpcClient with http one or websocket
-type ClientConnector = context.ClientConnector
+type ClientConnector interface {
+	Call(ctx context.Context, serviceMethod string, args, reply any) error
+}
 
 // BirpcClient represents an RPC BirpcClient.
 // There may be multiple outstanding Calls associated
@@ -70,8 +72,7 @@ func (c *BirpcClient) input() {
 	var err error
 	var resp Response
 	sending := &c.reqMutex
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx.Client = c
+	ctx, cancel := context.WithCancel(WithClient(context.Background(), c))
 	defer cancel()
 	pending := svc.NewPending(ctx)
 	wg := new(sync.WaitGroup)

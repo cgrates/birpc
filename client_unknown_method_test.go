@@ -1,19 +1,19 @@
 package birpc_test
 
 import (
+	"context"
 	"io"
 	"net"
 	"testing"
 	"time"
 
 	"github.com/cgrates/birpc"
-	"github.com/cgrates/birpc/context"
 	"github.com/cgrates/birpc/jsonrpc"
 )
 
 type Echo struct{}
 
-func (*Echo) Echo(_ *context.Context, args int, reply *int) error {
+func (*Echo) Echo(_ context.Context, args int, reply *int) error {
 	*reply = args
 	return nil
 }
