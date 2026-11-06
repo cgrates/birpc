@@ -27,14 +27,14 @@ other methods will be ignored:
   - the method's type is exported.
   - the method is exported.
   - the method has three arguments.
-  - the method's first argument has type pointer to context.Context.
+  - the method's first argument has type context.Context.
   - the method's last two arguments are exported (or builtin) types.
   - the method's third argument is a pointer.
   - the method has return type error.
 
 In effect, the method must look schematically like
 
-	func (t *T) MethodName(ctx *context.Context, argType T1, replyType *T2) error
+	func (t *T) MethodName(ctx context.Context, argType T1, replyType *T2) error
 
 where T1 and T2 can be marshaled by encoding/gob.
 These requirements apply even if a different codec is used.
@@ -68,7 +68,10 @@ Here is a simple example.  A server wishes to export an object of type Arith:
 
 	package server
 
-	import "errors"
+	import (
+		"context"
+		"errors"
+	)
 
 	type Args struct {
 		A, B int
@@ -80,12 +83,12 @@ Here is a simple example.  A server wishes to export an object of type Arith:
 
 	type Arith int
 
-	func (t *Arith) Multiply(ctx *context.Context, args *Args, reply *int) error {
+	func (t *Arith) Multiply(ctx context.Context, args *Args, reply *int) error {
 		*reply = args.A * args.B
 		return nil
 	}
 
-	func (t *Arith) Divide(ctx *context.Context, args *Args, quo *Quotient) error {
+	func (t *Arith) Divide(ctx context.Context, args *Args, quo *Quotient) error {
 		if args.B == 0 {
 			return errors.New("divide by zero")
 		}
@@ -140,6 +143,7 @@ The net/rpc package is frozen and is not accepting new features.
 package birpc
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log"
@@ -148,7 +152,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/cgrates/birpc/context"
 	"github.com/cgrates/birpc/internal/svc"
 )
 
@@ -242,7 +245,7 @@ func (server *Server) ServeRequest(codec ServerCodec) error {
 //
 // Cancelling the context given here will propagate cancellation to the context
 // of the called function.
-func (server *Server) ServeRequestContext(ctx *context.Context, codec ServerCodec) error {
+func (server *Server) ServeRequestContext(ctx context.Context, codec ServerCodec) error {
 	sending := new(sync.Mutex)
 	pending := svc.NewPending(ctx)
 	service, mtype, req, argv, replyv, keepReading, err := server.readRequest(codec)
@@ -374,7 +377,7 @@ func ServeRequest(codec ServerCodec) error {
 //
 // Cancelling the context given here will propagate cancellation to the context
 // of the called function.
-func ServeRequestContext(ctx *context.Context, codec ServerCodec) error {
+func ServeRequestContext(ctx context.Context, codec ServerCodec) error {
 	return DefaultServer.ServeRequestContext(ctx, codec)
 }
 

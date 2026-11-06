@@ -5,13 +5,12 @@
 package birpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"testing"
-
-	"github.com/cgrates/birpc/context"
 )
 
 type shutdownCodec struct {
@@ -48,7 +47,7 @@ type R struct {
 
 type S struct{}
 
-func (s *S) Recv(ctx *context.Context, nul *struct{}, reply *R) error {
+func (s *S) Recv(ctx context.Context, nul *struct{}, reply *R) error {
 	*reply = R{[]byte("foo")}
 	return nil
 }
