@@ -22,7 +22,7 @@ import (
 
 const (
 	network = "tcp4"
-	addr    = "127.0.0.1:5000"
+	addr    = "127.0.0.1:0"
 )
 
 type Args2 struct{ A, B int }
@@ -100,7 +100,7 @@ func TestJSONRPC(t *testing.T) {
 		srv.ServeCodec(NewJSONBirpcCodec(conn))
 	}()
 
-	conn, err := net.Dial(network, addr)
+	conn, err := net.Dial(network, lis.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}

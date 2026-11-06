@@ -21,7 +21,7 @@ import (
 
 const (
 	network = "tcp4"
-	addr    = "127.0.0.1:5000"
+	addr    = "127.0.0.1:0"
 )
 
 type Args2 struct{ A, B int }
@@ -62,7 +62,7 @@ func TestTCPGOB(t *testing.T) {
 	srv.Register(new(Airth2))
 	go srv.Accept(lis)
 
-	conn, err := net.Dial(network, addr)
+	conn, err := net.Dial(network, lis.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}
