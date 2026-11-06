@@ -121,7 +121,7 @@ func TestServer(t *testing.T) {
 	dec := json.NewDecoder(cli)
 
 	// Send hand-coded requests to server, parse responses.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		fmt.Fprintf(cli, `{"method": "Arith.Add", "id": "\u%04d", "params": [{"A": %d, "B": %d}]}`, i, i, i+1)
 		var resp ArithAddResp
 		err := dec.Decode(&resp)
