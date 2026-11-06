@@ -878,7 +878,7 @@ func benchmarkEndToEndAsync(dial func() (*Client, error), b *testing.B) {
 	res := make(chan *Call, MaxConcurrentCalls)
 	b.ResetTimer()
 
-	for p := 0; p < procs; p++ {
+	for range procs {
 		go func() {
 			for atomic.AddInt32(&send, -1) >= 0 {
 				gate <- true

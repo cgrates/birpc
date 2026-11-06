@@ -17,7 +17,7 @@ import (
 
 // Precompute the reflect type for error.
 var typeOfError = reflect.TypeFor[error]()
-var typeOfCtx = reflect.TypeOf((*context.Context)(nil))
+var typeOfCtx = reflect.TypeFor[*context.Context]()
 
 // NewService creates a new service
 func NewService(rcvr any, name string, useName bool) (s *Service, err error) {
