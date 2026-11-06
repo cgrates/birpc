@@ -15,9 +15,8 @@ import (
 	"github.com/cgrates/birpc/internal/svc"
 )
 
-// Precompute the reflect type for error. Can't use error directly
-// because Typeof takes an empty interface value. This is annoying.
-var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+// Precompute the reflect type for error.
+var typeOfError = reflect.TypeFor[error]()
 var typeOfCtx = reflect.TypeOf((*context.Context)(nil))
 
 // NewService creates a new service
